@@ -2,20 +2,20 @@
 
 /**
  * main - entry point
- * @ac: arg count
- * @av: arg vector
+ * @ac: input_str count
+ * @av: input_str vector
  *
  * Return: 0 on success, 1 on error
  */
 int main(int ac, char **av)
 {
-	info_t info[] = { INFO_INIT };
+	command_info info[] = {COMMAND_INFO_INIT};
 	int fd = 2;
 
-	asm ("mov %1, %0\n\t"
+	asm("mov %1, %0\n\t"
 		"add $3, %0"
-		: "=r" (fd)
-		: "r" (fd));
+		: "=r"(fd)
+		: "r"(fd));
 
 	if (ac == 2)
 	{
@@ -26,19 +26,19 @@ int main(int ac, char **av)
 				exit(126);
 			if (errno == ENOENT)
 			{
-				_eputs(av[0]);
-				_eputs(": 0: Can't open ");
-				_eputs(av[1]);
-				_eputchar('\n');
-				_eputchar(BUF_FLUSH);
+				error_puts(av[0]);
+				error_puts(": 0: Can't open ");
+				error_puts(av[1]);
+				error_putchar('\n');
+				error_putchar(BUFFER_FLUSH);
 				exit(127);
 			}
 			return (EXIT_FAILURE);
 		}
-		info->readfd = fd;
+		info->cmd_chain_type = fd;
 	}
-	populate_env_list(info);
-	read_history(info);
-	hsh(info, av);
+	populate_enviroment_list(info);
+	read_cmd_history(info);
+	main_shell_loop_hsh(info, av);
 	return (EXIT_SUCCESS);
 }

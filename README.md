@@ -52,7 +52,7 @@ gcc -Wall -Werror -Wextra -pedantic -std=gnu89 *.c -o hsh
 
 ## Testing
 
-Our shell should work in both interactive and non-interactive modes. Examples are provided in the project guidelines.
+Our shell should work in both active and non-active modes. Examples are provided in the project guidelines.
 
 ## Conclusion
 
@@ -60,4 +60,4 @@ The Simple Shell project is an exciting opportunity to apply our skills and deep
 
 ---
 
-*Note: Include any additional information specific to your implementation or project structure as needed.*
+_Note: Include any additional information specific to your implementation or project structure as needed._

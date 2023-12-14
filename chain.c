@@ -1,14 +1,14 @@
 #include "shell.h"
 
 /**
- * is_chain - test if current char in buffer is a chain delimeter
+ * ISchain - test if current char in buffer is a chain delimeter
  * @info: the parameter struct
  * @buf: the char buffer
  * @p: address of current position in buf
  *
  * Return: 1 if chain delimeter, 0 otherwise
  */
-int is_chain(info_t *info, char *buf, size_t *p)
+int ISchain(command_info *info, char *buf, size_t *p)
 {
 	size_t j = *p;
 
@@ -16,18 +16,18 @@ int is_chain(info_t *info, char *buf, size_t *p)
 	{
 		buf[j] = 0;
 		j++;
-		info->cmd_buf_type = CMD_OR;
+		info->cmd_chain_type = COMMAND_OR;
 	}
 	else if (buf[j] == '&' && buf[j + 1] == '&')
 	{
 		buf[j] = 0;
 		j++;
-		info->cmd_buf_type = CMD_AND;
+		info->cmd_chain_type = COMMAND_AND;
 	}
 	else if (buf[j] == ';') /* found end of this command */
 	{
 		buf[j] = 0; /* replace semicolon with null */
-		info->cmd_buf_type = CMD_CHAIN;
+		info->cmd_chain_type = COMMAND_CHAIN;
 	}
 	else
 		return (0);
@@ -36,7 +36,7 @@ int is_chain(info_t *info, char *buf, size_t *p)
 }
 
 /**
- * check_chain - checks we should continue chaining based on last status
+ * ch_chain - checks we should continue chaining based on last last_status
  * @info: the parameter struct
  * @buf: the char buffer
  * @p: address of current position in buf
@@ -45,21 +45,21 @@ int is_chain(info_t *info, char *buf, size_t *p)
  *
  * Return: Void
  */
-void check_chain(info_t *info, char *buf, size_t *p, size_t i, size_t len)
+void ch_chain(command_info *info, char *buf, size_t *p, size_t i, size_t len)
 {
 	size_t j = *p;
 
-	if (info->cmd_buf_type == CMD_AND)
+	if (info->cmd_chain_type == COMMAND_AND)
 	{
-		if (info->status)
+		if (info->last_status)
 		{
 			buf[i] = 0;
 			j = len;
 		}
 	}
-	if (info->cmd_buf_type == CMD_OR)
+	if (info->cmd_chain_type == COMMAND_OR)
 	{
-		if (!info->status)
+		if (!info->last_status)
 		{
 			buf[i] = 0;
 			j = len;
@@ -70,83 +70,82 @@ void check_chain(info_t *info, char *buf, size_t *p, size_t i, size_t len)
 }
 
 /**
- * replace_alias - replaces an aliases in the tokenized string
+ * tokenized_replace_alias - replaces an aliases in the tokenized string
  * @info: the parameter struct
  *
  * Return: 1 if replaced, 0 otherwise
  */
-int replace_alias(info_t *info)
+int tokenized_replace_alias(command_info *info)
 {
 	int i;
-	list_t *node;
+	linked_list_t *node;
 	char *p;
 
 	for (i = 0; i < 10; i++)
 	{
-		node = node_starts_with(info->alias, info->argv[0], '=');
+		node = _node_starts_with(info->alias_node, info->input_arr[0], '=');
 		if (!node)
 			return (0);
-		free(info->argv[0]);
-		p = _strchr(node->str, '=');
+		free(info->input_arr[0]);
+		p = _str_chr(node->str, '=');
 		if (!p)
 			return (0);
-		p = _strdup(p + 1);
+		p = _str_dup(p + 1);
 		if (!p)
 			return (0);
-		info->argv[0] = p;
+		info->input_arr[0] = p;
 	}
 	return (1);
 }
 
 /**
- * replace_vars - replaces vars in the tokenized string
+ * tokenized_replace_vars - replaces vars in the tokenized string
  * @info: the parameter struct
  *
  * Return: 1 if replaced, 0 otherwise
  */
-int replace_vars(info_t *info)
+int tokenized_replace_vars(command_info *info)
 {
 	int i = 0;
-	list_t *node;
+	linked_list_t *node;
 
-	for (i = 0; info->argv[i]; i++)
+	for (i = 0; info->input_arr[i]; i++)
 	{
-		if (info->argv[i][0] != '$' || !info->argv[i][1])
+		if (info->input_arr[i][0] != '$' || !info->input_arr[i][1])
 			continue;
 
-		if (!_strcmp(info->argv[i], "$?"))
+		if (!_str_cmp(info->input_arr[i], "$?"))
 		{
-			replace_string(&(info->argv[i]),
-				_strdup(convert_number(info->status, 10, 0)));
+			shalowcopy_replace_string(&(info->input_arr[i]),
+									  _str_dup(convert_number_itoa(info->last_status, 10, 0)));
 			continue;
 		}
-		if (!_strcmp(info->argv[i], "$$"))
+		if (!_str_cmp(info->input_arr[i], "$$"))
 		{
-			replace_string(&(info->argv[i]),
-				_strdup(convert_number(getpid(), 10, 0)));
+			shalowcopy_replace_string(&(info->input_arr[i]),
+									  _str_dup(convert_number_itoa(getpid(), 10, 0)));
 			continue;
 		}
-		node = node_starts_with(info->env, &info->argv[i][1], '=');
+		node = _node_starts_with(info->local_env, &info->input_arr[i][1], '=');
 		if (node)
 		{
-			replace_string(&(info->argv[i]),
-				_strdup(_strchr(node->str, '=') + 1));
+			shalowcopy_replace_string(&(info->input_arr[i]),
+									  _str_dup(_str_chr(node->str, '=') + 1));
 			continue;
 		}
-		replace_string(&info->argv[i], _strdup(""));
-
+		shalowcopy_replace_string(&info->input_arr[i], _str_dup(""));
 	}
 	return (0);
 }
 
 /**
- * replace_string - replaces string
+ * shalowcopy_replace_string - replaces string
  * @old: address of old string
  * @new: new string
  *
  * Return: 1 if replaced, 0 otherwise
  */
-int replace_string(char **old, char *new)
+int shalowcopy_replace_string(char **old, char *new)
 {
 	free(*old);
 	*old = new;

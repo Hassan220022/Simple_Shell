@@ -1,74 +1,74 @@
 #include "shell.h"
 
 /**
- * clear_info - initializes info_t struct
+ * _clear_info - initializes command_info struct
  * @info: struct address
  */
-void clear_info(info_t *info)
+void _clear_info(command_info *info)
 {
-	info->arg = NULL;
-	info->argv = NULL;
-	info->path = NULL;
-	info->argc = 0;
+	info->input_str = NULL;
+	info->input_arr = NULL;
+	info->cmd_path = NULL;
+	info->param_count = 0;
 }
 
 /**
- * set_info - initializes info_t struct
+ * _set_info - initializes command_info struct
  * @info: struct address
  * @av: argument vector
  */
-void set_info(info_t *info, char **av)
+void _set_info(command_info *info, char **av)
 {
 	int i = 0;
 
-	info->fname = av[0];
-	if (info->arg)
+	info->file_name = av[0];
+	if (info->input_str)
 	{
-		info->argv = strtow(info->arg, " \t");
-		if (!info->argv)
+		info->input_arr = str_tow(info->input_str, " \t");
+		if (!info->input_arr)
 		{
 
-			info->argv = malloc(sizeof(char *) * 2);
-			if (info->argv)
+			info->input_arr = malloc(sizeof(char *) * 2);
+			if (info->input_arr)
 			{
-				info->argv[0] = _strdup(info->arg);
-				info->argv[1] = NULL;
+				info->input_arr[0] = _str_dup(info->input_str);
+				info->input_arr[1] = NULL;
 			}
 		}
-		for (i = 0; info->argv && info->argv[i]; i++)
+		for (i = 0; info->input_arr && info->input_arr[i]; i++)
 			;
-		info->argc = i;
+		info->param_count = i;
 
-		replace_alias(info);
-		replace_vars(info);
+		tokenized_replace_alias(info);
+		tokenized_replace_vars(info);
 	}
 }
 
 /**
- * free_info - frees info_t struct fields
+ * _free_info - frees command_info struct fields
  * @info: struct address
  * @all: true if freeing all fields
  */
-void free_info(info_t *info, int all)
+void _free_info(command_info *info, int all)
 {
-	ffree(info->argv);
-	info->argv = NULL;
-	info->path = NULL;
+	f_free(info->input_arr);
+	info->input_arr = NULL;
+	info->cmd_path = NULL;
 	if (all)
 	{
-		if (!info->cmd_buf)
-			free(info->arg);
-		if (info->env)
-			free_list(&(info->env));
-		if (info->history)
-			free_list(&(info->history));
-		if (info->alias)
-			free_list(&(info->alias));
-		ffree(info->environ);
-			info->environ = NULL;
-		bfree((void **)info->cmd_buf);
-		if (info->readfd > 2)
-			close(info->readfd);
-		_putchar(BUF_FLUSH);
+		if (!info->cmd_chain_buf)
+			free(info->input_str);
+		if (info->local_env)
+			freeList(&(info->local_env));
+		if (info->cmd_history)
+			freeList(&(info->cmd_history));
+		if (info->alias_node)
+			freeList(&(info->alias_node));
+		f_free(info->custom_environ);
+		info->custom_environ = NULL;
+		b_free((void **)info->cmd_chain_buf);
+		if (info->input_fd > 2)
+			close(info->input_fd);
+		_putchar(BUFFER_FLUSH);
 	}
 }
